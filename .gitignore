@@ -1,0 +1,9 @@
+reports_cloud/**/data/
+node_modules/
+/package.json
+/package-lock.json
+/remodex-pairing-qr.png
+.env
+.env.*
+!.env.example
+.DS_Store
