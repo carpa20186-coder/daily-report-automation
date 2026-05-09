@@ -1,0 +1,49 @@
+name: Contents Business Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Slack destination"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test
+          - prod
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LMES_ACCESS_TOKEN: ${{ secrets.LMES_ACCESS_TOKEN }}
+      CONTENTS_TEST_SLACK_WEBHOOK: ${{ secrets.CONTENTS_TEST_SLACK_WEBHOOK }}
+      CONTENTS_PROD_SLACK_WEBHOOK: ${{ secrets.CONTENTS_PROD_SLACK_WEBHOOK }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch LMES crosslytics
+        run: |
+          node reports_cloud/contents_business/fetch_lmes_crosslytics.mjs \
+            --out reports_cloud/contents_business/data/contents_crosslytics_14869.json
+
+      - name: Send Slack report
+        run: |
+          python3 -B reports_cloud/contents_business/build_contents_report.py \
+            --crosslytics-json reports_cloud/contents_business/data/contents_crosslytics_14869.json \
+            --mode "${{ inputs.mode }}" \
+            --send \
+            --out-blocks reports_cloud/contents_business/data/slack_blocks.json
